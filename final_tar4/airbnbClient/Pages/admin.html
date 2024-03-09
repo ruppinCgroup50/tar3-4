@@ -1,0 +1,207 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Manage Users</title>
+
+    <meta http-equiv="Content-type" content="text/html; charset=utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no">
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.3.1.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+    <script src="../JS/ajaxCalls.js"></script>
+    <link href="../CSS/StyleManage.css" rel="stylesheet" />
+
+    <script>
+
+        $(document).ready(function () {
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+                let port = "7113";
+                server = `https://localhost:${port}/`;
+
+            }
+            else {
+                server = "https://proj.ruppin.ac.il/cgroup50/test2/tar1/";
+            }
+
+            $("#ManageBTN").click(manageUsers);
+
+            $(document).on('change', '.statusCheckbox', function () {
+                let rowData = tbl.row($(this).closest('tr')).data();
+                let isActive = this.checked;
+                let userAfterEdit = {
+                    Email: rowData.email,
+                    FirstName: rowData.firstName,
+                    FamilyName: rowData.familyName,
+                    Password: rowData.password,
+                    IsActive: isActive
+                }
+
+                api = server + "api/Users";
+                ajaxCall("PUT", api, JSON.stringify(userAfterEdit), UpdateSuccess, UpdateError);
+            });
+
+            $("#generateReport").click(function () {
+                let selectedMonth = Number($("#month").val());
+
+                api = server + "api/vacations/averagePrice";
+                ajaxCall("GET", api, { month: selectedMonth }, repSuccess, repError);
+            });
+
+        });
+
+        function repSuccess(obj) {
+            const reportResult = $("#reportResult");
+            reportResult.empty(); // Clear previous results
+
+            // Iterate over each object in the data array and append a row to the table body
+            obj.forEach(item => {
+                let row = `<tr><td>${item.city} :</td><td>${item.averagePricePerNight}</td></tr>`;
+                reportResult.append(row);
+            });
+
+            // Show the table if it was hidden
+            $("#reportResult").show();
+
+            if (obj.length == 0) {
+                reportResult.append(`<tr><td colspan="2">אין נתונים בחודש זה </td></tr>`);
+            }
+        }
+
+        function repError() {
+            swal("error!", `status:${err.status}`, "error");
+        }
+
+        function UpdateSuccess(res) {
+            alert("שינוי הסטטוס בוצע בהצלחה");      
+        }
+
+        function UpdateError(err) {
+            alert("שינוי הסטטוס לא התבצע כראוי");
+        }
+
+        function manageUsers() {
+            api = server + "api/Users";
+            ajaxCall("GET", api, "", getSuccess, error);
+        }
+
+        // this function is activated in case of a success
+        function getSuccess(usersdata) {
+            var usersTable = document.getElementById('tableContainer');
+            usersTable.style.display = 'block';
+
+            var adminReport = document.getElementById('adminReport');
+            adminReport.style.display = 'block';
+
+            $("#ManageBTN").hide();
+
+            users = usersdata; // keep the cars array in a global variable;
+            try {
+                tbl = $('#usersTable').DataTable({
+                    data: usersdata,
+                    pageLength: 5,
+                    columns: [
+                        { data: "firstName" },
+                        { data: "familyName" },
+                        { data: "email" },
+                        { data: "password" },
+                        {
+                            data: "isActive",
+                            render: function (data, type, row, meta) {
+                                if (data == true)
+                                    return '<input type="checkbox" class="statusCheckbox" checked />';
+                                else
+                                    return '<input type="checkbox" class="statusCheckbox"/>';
+                            }
+                        },
+                        {
+                            data: "isAdmin",
+                            render: function (data, type, row, meta) {
+                                if (data == true)
+                                    return '<input type="checkbox" checked disabled="disabled"/>';
+                                else
+                                    return '<input type="checkbox" disabled="disabled"/>';
+                            }
+                        }
+                    ],
+                });
+            }
+
+            catch (err) {
+                alert(err);
+            }
+        }
+
+        // this function is activated in case of a failure
+        function error(err) {
+            swal("Error: " + err);
+        }
+
+    </script>
+
+
+</head>
+
+<body>
+    <div>
+        <h2>Manage Users</h2>
+        <br /><br /><br />
+        <button type="button" id="ManageBTN">manage users</button>
+    </div>
+
+    <div class="container" id="tableContainer" style="display: none;">
+        <form id="MForm">
+            <table id="usersTable" class="display nowrap" style="width:100%">
+                <thead>
+                    <tr>
+                        <th id="firstName">First Name</th>
+                        <th id="familyName">Family Name</th>
+                        <th id="email">Email</th>
+                        <th id="password">Password</th>
+                        <th id="isActive">Is Active</th>
+                        <th id="isAdmin">Is Admin</th>
+                    </tr>
+                </thead>
+            </table>
+
+        </form>
+    </div>
+
+    <div class="container" id="adminReport" style="display: none;">
+        <h2>Admin Report</h2>
+        <br /><br /><br />
+        <label for="month">Select Month:</label>
+        <select id="month">
+            <option value="1">January</option>
+            <option value="2">February</option>
+            <option value="3">March</option>
+            <option value="4">April</option>
+            <option value="5">May</option>
+            <option value="6">June</option>
+            <option value="7">July</option>
+            <option value="8">August</option>
+            <option value="9">September</option>
+            <option value="10">October</option>
+            <option value="11">November</option>
+            <option value="12">December</option>
+        </select>
+        <button type="button" id="generateReport">Generate Report</button>
+        <div id="reportResult"></div>
+    </div>
+
+</body>
+</html>

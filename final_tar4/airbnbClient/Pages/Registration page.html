@@ -1,0 +1,188 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Registration page</title>
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+    <link href="../CSS/StyleHomePage.css" rel="stylesheet" />
+
+    <script src="../JS/ajaxCalls.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+                let port = "7113";
+                server = `https://localhost:${port}/`;
+
+            }
+            else {
+                server = "https://proj.ruppin.ac.il/cgroup50/test2/tar1/";
+            }
+
+            // bind the submit event to a function called f1
+            $("#Uform").submit(regUser);
+            $("#loginForm").submit(loginUser);
+        });
+
+        function regUser() {
+            addUser();
+            return false;
+        }
+
+        function addUser() {
+            const email = document.getElementById("email").value;
+            const firstName = document.getElementById("firstName").value;
+            const familyName = document.getElementById("familyName").value;
+            const password = document.getElementById("password").value;
+            user =
+            {
+                Email: email,
+                FirstName: firstName,
+                FamilyName: familyName,
+                Password: password
+            }
+            api = server + "api/Users";
+            ajaxCall("POST", api, JSON.stringify(user), regSCB, regECB);
+        }
+
+        // Add a callback function for the submit success
+        function regSCB(data) {
+            sessionStorage["ConnectedUser"] = JSON.stringify(data);
+            alert("נרשמת בהצלחה");
+        }
+
+        // Add a callback function for the submit failure
+        function regECB(err) {
+            if (err.responseText.includes("PRIMARY"))
+                alert("מייל זה כבר קיים במערכת")
+            else {
+                alert("שגיאה כללית נסה שוב")
+            }
+        }
+
+        // Open the login popup
+        function openLoginPopup() {
+            var loginPopup = document.getElementById('loginPopup');
+            loginPopup.style.display = 'block';
+        }
+
+        // Close the login popup
+        function closeLoginPopup() {
+            var loginPopup = document.getElementById('loginPopup');
+            loginPopup.style.display = 'none';
+        }
+
+        function loginUser() {
+            login();
+            return false;
+        }
+
+        // Function to handle login
+        function login() {
+            const loginEmail = document.getElementById("loginEmail").value;
+            const loginPassword = document.getElementById("loginPassword").value;
+            console.log("User logged in:", { loginEmail, loginPassword });
+
+            let userToConnect = {
+                Email: loginEmail,
+                FirstName: "",
+                FamilyName: "",
+                Password: loginPassword
+            }
+
+            api = server + "api/Users/login";
+            ajaxCall("POST", api, JSON.stringify(userToConnect), LogSCB, logECB);
+        }
+
+        function LogSCB(data) {
+            closeLoginPopup();
+            sessionStorage["ConnectedUser"] = JSON.stringify(data);
+
+            const loggedInUser = JSON.parse(sessionStorage.getItem('ConnectedUser'));
+            if (loggedInUser.isAdmin) {
+                // Redirect admin users to the admin page
+                window.location.href = 'admin.html';
+            }
+            else if (loggedInUser.isActive == false) {
+                alert("this user is not active");
+            }
+            else if (loggedInUser.isActive == true) {
+                // Redirect regular users to the Flats page
+                window.location.href = 'Flats page.html';
+            }
+        }
+
+        function logECB(err) {
+            alert("המערכת לא מצאה אותך");
+        }
+
+    </script>
+
+</head>
+
+<body>
+    <div class="background-image"></div>
+
+    <h1>Welcome to Airbnb</h1>
+
+    <div class="container">
+        <form id="Uform">
+            <h2>User Registration</h2>
+            <div class="form-group">
+                <label for="firstName"><span class="blue-star">★ </span>First Name</label>
+                <input type="text" class="form-control" id="firstName" placeholder="Enter the first name" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="familyName"><span class="blue-star">★ </span>Family Name</label>
+                <input type="text" class="form-control" id="familyName" placeholder="Enter the family name" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="email"><span class="blue-star">★ </span>Email</label>
+                <input type="text" class="form-control" id="email" placeholder="Enter the email" required 
+                   pattern="^([a-zA-Z0-9_\-\.]+)@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.)|(([a-zA-Z0-9\-]+\.)+))([a-zA-Z]{2,4}|[0-9]{1,3})(\]?)$"
+                   oninvalid="this.setCustomValidity('Format should be email')"
+                   oninput="this.setCustomValidity('')"
+                       />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="password"><span class="blue-star">★ </span>Password</label>
+                <input type="password" class="form-control" id="password" placeholder="Enter the password" required 
+                   pattern="^(?=.*\d).{4,10}$"
+                   oninvalid="this.setCustomValidity('Password must be between 4 and 10 digits long and include at least one numeric digit')"
+                   oninput="this.setCustomValidity('')"
+                       />
+            </div>
+            <br />
+            <input type="submit" class="FormBTN" value="Registration" />
+        </form>
+    </div>
+
+    <!-- Login Popup -->
+    <div id="loginPopup" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLoginPopup()">&times;</span>
+            <br />
+            <h2>Login</h2>
+            <form id="loginForm">
+                <label><span class="blue-star">★ </span>Email</label>
+                <input type="email" id="loginEmail" placeholder="Enter the email" required />
+                <br />
+                <label><span class="blue-star">★ </span>Password</label>
+                <input type="password" id="loginPassword" placeholder="Enter the password" required />
+                <br />
+                <input type="submit" id="loginButton" value="Login" />
+                <br /><br />
+            </form>
+        </div>
+    </div>
+
+    <input type="submit" class="LoginBTN" value="Login" onclick="openLoginPopup()" />
+
+</body>
+</html>

@@ -1,0 +1,242 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Flats Page</title>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+    <script src="../JS/ajaxCalls.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+                let port = "7113";
+                server = `https://localhost:${port}/`;
+
+            }
+            else {
+                server = "https://proj.ruppin.ac.il/cgroup50/test2/tar1/";
+            }
+
+            // bind the submit event to a function called f1
+            $("#Fform").submit(f1);
+            $("#updateForm").submit(updateDetails);
+            getFlats();
+        });
+
+        function getFlats() {
+            api = server + "api/Flats";
+            ajaxCall("GET", api, "", getSCB, getECB);
+        }
+
+        // Add a callback function for the get success
+        function getSCB(FlatsList) {
+            RenderFlats(FlatsList);
+        }
+
+        function RenderFlats(FlatsList) {
+            ph = "";
+            for (var i = 0; i < FlatsList.length; i++) {
+                ph += "<div class='card'>";
+                ph += "<h3>Flat Details</h3>";
+                ph += "<div class='card-content'>";
+                ph += "<p>The id of flat is: " + FlatsList[i].id + "</p>";
+                ph += "<p>The city of flat is: " + FlatsList[i].city + "</p>";
+                ph += "<p>The address of flat is: " + FlatsList[i].address + "</p>";
+                ph += "<p>The price of flat is: " + FlatsList[i].price + "</p>";
+                ph += "<p>The number of room of flat is: " + FlatsList[i].numberofroom + "</p>";
+                ph += "<button id='orderBTN' onclick='FlatSelection(" + FlatsList[i].id + ")'>Order Flat</button>";
+                ph += "</div>";
+                ph += "</div>";
+            }
+            document.getElementById("ph1").innerHTML = ph;
+        }
+
+        function FlatSelection(chosenFlatId) {
+            // Save flatId in sessionStorage
+            sessionStorage.setItem('chosenFlatId', chosenFlatId);
+
+            // Take the user to the vacations page
+            window.location.href = 'Vacations page.html';
+        }
+
+        // Add a callback function for the get failure
+        function getECB(err) {
+            console.log(err);
+        }
+
+        function f1() {
+            // create a JSON Flat Object
+            flat = {
+                id: parseInt($("#id").val()),
+                city: $("#city").val(),
+                address: $("#address").val(),
+                numberofroom: parseInt($("#numberofroom").val()),
+                price: parseFloat($("#price").val())
+            }
+
+            // ajaxCall("POST", "../api/Flats", JSON.stringify(Flat), success, error);
+            api = server + "api/Flats";
+            ajaxCall("POST", api, JSON.stringify(flat), postSCB, postECB);
+
+            // the return false will prevent the form from being submitted
+            return false;
+        }
+
+        // Add a callback function for the submit success
+        function postSCB(res) {
+            alert("דירה הוכנסה בהצלחה!");
+            getFlats();
+            console.log(res);
+        }
+
+        // Add a callback function for the submit failure
+        function postECB(err) {
+            alert("הייתה בעיה בהכנסת הדירה");
+            console.log(err);
+        }
+
+        // Open the update popup
+        function openUpdatePopup() {
+            var updatePopup = document.getElementById('updatePopup');
+            updatePopup.style.display = 'block';
+        }
+
+        // Close the update popup
+        function closeUpdatePopup() {
+            var updatePopup = document.getElementById('updatePopup');
+            updatePopup.style.display = 'none';
+        }
+
+        // Function to update user details
+        function updateDetails(event) {
+            event.preventDefault();
+            const firstName = document.getElementById("updateFirstName").value;
+            const familyName = document.getElementById("updateFamilyName").value;
+            const password = document.getElementById("updatePassword").value;
+            const connectedUserString = sessionStorage.getItem('ConnectedUser');
+            const connectedUser = JSON.parse(connectedUserString);
+            const userEmail = connectedUser.email;
+            const isActive = connectedUser.isActive;
+
+            let userToUpdate = {
+                Email: userEmail,
+                FirstName : firstName,
+                FamilyName : familyName,
+                Password: password,
+                IsActive: isActive
+            }
+
+            api = server + "api/Users";
+            ajaxCall("PUT", api, JSON.stringify(userToUpdate), UpdateSCB, UpdateECB);
+        }
+
+        function UpdateSCB(data)
+        {
+            alert("פרטייך עודכנו בהצלחה");
+            closeUpdatePopup();
+        }
+
+        function UpdateECB(err) {
+            alert("שגיאה כללית נסה שוב");
+            closeUpdatePopup();
+        }
+
+        function LogOut() {
+            window.location.href = "Registration page.html";
+            // Clear session storage
+            sessionStorage.clear();
+        }
+
+    </script>
+    <link href="../CSS/StylePage.css" rel="stylesheet" />
+    
+</head>
+<body>
+    <div class="background-image"></div>
+
+    <div class="container">
+        <br /><br />
+        <form id="Fform">
+            <h2>Insert A new Flat</h2>
+            <div class="form-group">
+                <label for="id"><span class="red-star">★ </span>Id</label>
+                <input type="number" class="form-control" id="id" placeholder="Enter the id" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="city"><span class="red-star">★ </span>City</label>
+                <input list="cities" class="form-control" id="city" placeholder="Select a city" required />
+                <datalist id="cities">
+                    <option value="Golan Heights">Golan Heights</option>
+                    <option value="Nahariya">Nahariya</option>
+                    <option value="Acre">Acre</option>
+                    <option value="Haifa">Haifa</option>
+                    <option value="Tiberias">Tiberias</option>
+                    <option value="Zichron Yaakov">Zichron Yaakov</option>
+                    <option value="Netanya">Netanya</option>
+                    <option value="Herzliya">Herzliya</option>
+                    <option value="Tel Aviv">Tel Aviv</option>
+                    <option value="Jerusalem">Jerusalem</option>
+                    <option value="Dead Sea">Dead Sea</option>
+                    <option value="Mitzpe Ramon">Mitzpe Ramon</option>
+                    <option value="Eilat">Eilat</option>
+                </datalist>
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="address"><span class="red-star">★ </span>Address</label>
+                <input type="text" class="form-control" id="address" placeholder="Enter the address" maxlength="25" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="price"><span class="red-star">★ </span>Price</label>
+                <input type="number" step="any" class="form-control" id="price" placeholder="Enter the price" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="numberofroom"><span class="red-star">★ </span>Number of room</label>
+                <input type="number" class="form-control" id="numberofroom" placeholder="Enter the number of room" min="1" max="8" required />
+            </div>
+            <br />
+            <input type="submit" class="FormBTN" value="Post New Flat" />
+        </form>
+    </div>
+
+    <div id="ph1"> </div>
+
+    <!-- Personal Details Update Form -->
+    <div id="updatePopup" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeUpdatePopup()">&times;</span>
+            <br />
+            <h2>Update Details</h2>
+            <form id="updateForm">
+                <label for="updateFirstName"><span class="blue-star">★ </span>First Name</label>
+                <input type="text" class="form-control" id="updateFirstName" placeholder="Enter the first name" required />
+                <br />
+                <label for="updateFamilyName"><span class="blue-star">★ </span>Family Name</label>
+                <input type="text" class="form-control" id="updateFamilyName" placeholder="Enter the family name" required />
+                <br />
+                <label for="updatePassword"><span class="blue-star">★ </span>Password</label>
+                <input type="password" class="form-control" id="updatePassword" placeholder="Enter the password" required 
+                   pattern="^(?=.*\d).{4,10}$"
+                   oninvalid="this.setCustomValidity('Password must be between 4 and 10 digits long and include at least one numeric digit')"
+                   oninput="this.setCustomValidity('')"
+                       />
+                <br />
+                <input type="submit" id="updateButton" value="Update" />
+                <br /><br />
+            </form>
+        </div>
+    </div>
+
+    <input type="submit" class="UpdateBTN" value="Update Details User" onclick="openUpdatePopup()" />
+    <input type="submit" class="LogoutBTN" value="Logout" onclick="LogOut()" />
+
+</body>
+</html>

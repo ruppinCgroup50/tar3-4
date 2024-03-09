@@ -1,0 +1,178 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Vacations Page</title>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+
+    <script src="../JS/ajaxCalls.js"></script>
+
+    <script>
+
+        $(document).ready(function () {
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1") {
+                let port = "7113";
+                server = `https://localhost:${port}/`;
+
+            }
+            else {
+                server = "https://proj.ruppin.ac.il/cgroup50/test2/tar1/";
+            }
+
+            const flatid = sessionStorage.getItem('chosenFlatId');
+            document.getElementById("flatId").value = flatid;
+
+            $("#Vform").submit(f2);
+            $("#VacationBTN").click(getVacations);
+        });
+
+        function getVacations() {
+            const connectedUserString = sessionStorage.getItem('ConnectedUser');
+            const connectedUser = JSON.parse(connectedUserString);
+            const email = connectedUser.email;
+
+            api = server + "api/vacations/email/" + email;
+            ajaxCall("GET", api, "", getSCB, getECB);
+        }
+
+        // Add a callback function for the get success
+        function getSCB(vacationList) {
+            RenderVacations(vacationList);
+        }
+
+        function RenderVacations(vacationList) {
+            ph = "";
+            for (var i = 0; i < vacationList.length; i++) {
+                ph += "<div class='card'>";
+                ph += "<h3>Vacation Details</h3>";
+                ph += "<div class='card-content'>";
+                ph += "<p>The id of vacation is: " + vacationList[i].id + "</p>";
+                ph += "<p>The userId of vacation is: " + vacationList[i].userId + "</p>";
+                ph += "<p>The flatId of vacation is: " + vacationList[i].flatId + "</p>";
+                ph += "<p>The startDate of vacation is: " + new Date(vacationList[i].startDate).toLocaleDateString() + "</p>";
+                ph += "<p>The endDate of vacation is: " + new Date(vacationList[i].endDate).toLocaleDateString() + "</p>";
+                ph += "</div>";
+                ph += "</div>";
+            }
+            document.getElementById("ph2").innerHTML += ph;
+        }
+
+        // Add a callback function for the get failure
+        function getECB(err) {
+            console.log(err);
+        }
+
+        function f2() {
+            vacation = {
+                id: parseInt($("#vId").val()),
+                userId: $("#userId").val(),
+                flatId: parseInt($("#flatId").val()),
+                startDate: new Date($("#startDate").val()),
+                endDate: new Date($("#endDate").val())
+            }
+
+            // בדיקת תקינות התאריכים
+            if (!ValidationVacation()) {
+                return false; // מניעת שליחת הבקשה לשרת כאשר התאריך אינו תקין
+            }
+
+            // ajaxCall("POST", "../api/Flats", JSON.stringify(Flat), success, error);
+            api = server + "api/vacations";
+            ajaxCall("POST", api, JSON.stringify(vacation), postSCB, postECB);
+
+            // the return false will prevent the form from being submitted
+            return false;
+        }
+
+        function ValidationVacation() {
+            var startDate = Date.parse($("#startDate").val());
+            var endDate = Date.parse($("#endDate").val());
+
+            if (endDate < startDate) {
+                document.getElementById("endDate").value = "";
+                alert("The end date should be greater than the start date");
+                return false;
+            }
+
+            var totalDays = (endDate - startDate) / (1000 * 60 * 60 * 24);
+            if (totalDays > 20) {
+                document.getElementById("endDate").value = "";
+                alert("Vacation cannot exceed 20 days");
+                return false;
+            }
+
+            return true; // התאריכים תקינים
+        }
+
+        // Add a callback function for the submit success
+        function postSCB(res) {
+            if (res == 0) {
+                alert("הייתה בעיה בהכנסת החופשה");
+            }
+            else {
+                alert("חופשה הוכנסה בהצלחה!");
+            }
+            console.log(res);
+        }
+
+        // Add a callback function for the submit failure
+        function postECB(err) {
+            alert("הייתה בעיה בהכנסת החופשה");
+            console.log(err);
+        }
+
+        function LogOut() {
+            window.location.href = "Registration page.html";
+            // Clear session storage
+            sessionStorage.clear();
+        }
+
+    </script>
+    <link href="../CSS/StylePage.css" rel="stylesheet" />
+
+</head>
+<body>
+    <div class="background-image"></div>
+
+    <div class="container">
+        <br /><br />
+        <form id="Vform">
+            <h2>Insert A new Vacation</h2>
+            <div class="form-group">
+                <label for="id"><span class="red-star">★ </span>Id</label>
+                <input type="number" class="form-control" id="vId" placeholder="Enter the id" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="userId"><span class="red-star">★ </span>UserId</label>
+                <input type="text" class="form-control" id="userId" placeholder="Enter the userId" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="flatId"><span class="red-star">★ </span>FlatId</label>
+                <input type="number" class="form-control" id="flatId" required disabled />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="startDate"><span class="red-star">★ </span>StartDate</label>
+                <input type="date" class="form-control" id="startDate" placeholder="Enter the startDate" required />
+            </div>
+            <br />
+            <div class="form-group">
+                <label for="endDate"><span class="red-star">★ </span>EndDate</label>
+                <input type="date" class="form-control" id="endDate" placeholder="Enter the endDate" required />
+            </div>
+            <br />
+            <input type="submit" class="FormBTN" value="Post New Vacation" />
+        </form>
+    </div>
+
+    <div id="ph2">
+        <input type="submit" id="VacationBTN" value="Get All My Vacations" />
+    </div>
+    <input type="submit" class="LogoutBTN" value="Logout" onclick="LogOut()" />
+</body>
+</html>
